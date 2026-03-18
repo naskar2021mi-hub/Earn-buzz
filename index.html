@@ -1,369 +1,612 @@
-import { useState, useEffect, useRef } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>⚡ SkillFlash — India's Skill Earning App</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:#060612;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:12px;}
+::-webkit-scrollbar{width:0;}
 
-const POSTS = [
-  { id:1, user:"Priya_Dances", avatar:"💃", tag:"Dance", time:"2m ago", views:48200, coins:320, badge:"🚀 Viral", emoji:"🕺", color:"#FF6B6B", desc:"Freestyle on Kesariya — shot in my room! No studio needed 🔥", streak:18, earned:"₹480" },
-  { id:2, user:"RahulCooks", avatar:"👨‍🍳", tag:"Cooking", time:"5m ago", views:12800, coins:89, badge:"⭐ Rising", emoji:"🍳", color:"#FF9933", desc:"Made Biryani in 15 mins. Swiggy sponsored this post 🎉", streak:7, earned:"₹130" },
-  { id:3, user:"AnjaliSings", avatar:"🎤", tag:"Music", time:"8m ago", views:91000, coins:1240, badge:"👑 Top India", emoji:"🎵", color:"#A78BFA", desc:"Acapella cover. boAt gifted me earphones for going viral!", streak:42, earned:"₹1,860" },
-  { id:4, user:"DevCodes", avatar:"💻", tag:"Tech", time:"12m ago", views:5600, coins:38, badge:"🆕 New", emoji:"⌨️", color:"#34D399", desc:"Built a todo app live in 3 mins. First viral post!", streak:3, earned:"₹57" },
-  { id:5, user:"MeghaArt", avatar:"🎨", tag:"Art", time:"1m ago", views:23100, coins:178, badge:"🔥 Trending", emoji:"✏️", color:"#F7C948", desc:"Drew Shah Rukh Khan in 2 mins 30 secs. Can you beat me?", streak:11, earned:"₹267" },
-];
+.phone{width:100%;max-width:390px;min-height:780px;background:#0f0f1a;border-radius:36px;border:2px solid #1e1e30;box-shadow:0 0 80px rgba(255,107,0,0.12),0 40px 80px rgba(0,0,0,0.8);overflow:hidden;position:relative;display:flex;flex-direction:column;margin:0 auto;}
 
-const LEADERBOARD = [
-  { rank:1, user:"AnjaliSings", avatar:"🎤", views:"91k", earned:"₹1,860", streak:42 },
-  { rank:2, user:"Priya_Dances", avatar:"💃", views:"48k", earned:"₹480", streak:18 },
-  { rank:3, user:"MeghaArt", avatar:"🎨", views:"23k", earned:"₹267", streak:11 },
-  { rank:4, user:"RahulCooks", avatar:"👨‍🍳", views:"12k", earned:"₹130", streak:7 },
-  { rank:5, user:"You 😎", avatar:"😎", views:"0", earned:"₹0", streak:0, isMe:true },
-];
+/* NOTIFICATION */
+.notif{position:absolute;top:12px;left:12px;right:12px;z-index:200;background:linear-gradient(135deg,#1a0800,#2a1000);border:1.5px solid rgba(255,153,51,0.5);border-radius:20px;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 40px rgba(0,0,0,0.8);animation:slideDown 0.4s ease;}
+@keyframes slideDown{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.notif-icon{font-size:26px;}
+.notif-text{flex:1;}
+.notif-title{color:#FF9933;font-weight:800;font-size:11px;letter-spacing:1px;}
+.notif-sub{color:#e0e0ff;font-size:11px;margin-top:2px;}
+.notif-sub b{color:#F7C948;}
+.notif-go{background:linear-gradient(135deg,#FF9933,#FF6B00);border:none;border-radius:9px;color:#fff;font-weight:900;font-size:11px;padding:7px 11px;cursor:pointer;}
+.notif-close{background:none;border:none;color:#444;font-size:18px;cursor:pointer;padding:0 4px;}
 
-const BRANDS = [
-  { name:"boAt Music Hunt 🎧", prize:"₹50,000", days:12, color:"#FF1744", icon:"🎵" },
-  { name:"Swiggy Cook Challenge", prize:"₹25,000", days:7, color:"#FC8C04", icon:"🍕" },
-  { name:"Myntra Style Flash", prize:"₹1,00,000", days:3, color:"#E91E63", icon:"👗" },
-  { name:"Mamaearth Skincare", prize:"₹75,000", days:20, color:"#4CAF50", icon:"🌿" },
-];
+/* EARN POPUP */
+.earn-popup{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);z-index:300;background:linear-gradient(135deg,#F7C948,#FF6B00);border-radius:20px;padding:16px 30px;text-align:center;box-shadow:0 0 50px rgba(247,201,72,0.5);animation:popIn 0.3s ease;}
+@keyframes popIn{from{transform:translate(-50%,-50%) scale(0.7);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.earn-popup-icon{font-size:34px;}
+.earn-popup-text{color:#fff;font-weight:900;font-size:18px;margin-top:4px;}
 
-const EARN_ACTIONS = [
-  { icon:"📹", label:"Daily Skill Post", coins:10 },
-  { icon:"🔥", label:"Streak Bonus (Day 1)", coins:5 },
-  { icon:"👁️", label:"500 Views Milestone", coins:50 },
-  { icon:"⚡", label:"Win a Challenge", coins:100 },
-  { icon:"🚀", label:"10,000 Views — Viral!", coins:500 },
-];
+/* HEADER */
+.header{padding:48px 18px 12px;background:#0a0a16;border-bottom:1px solid #181828;flex-shrink:0;}
+.header-row{display:flex;justify-content:space-between;align-items:center;}
+.logo{font-weight:900;font-size:24px;background:linear-gradient(90deg,#FF9933,#FF6B00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-1px;}
+.logo-sub{color:#444;font-size:10px;margin-top:1px;}
+.header-right{display:flex;gap:10px;align-items:center;}
+.bell{position:relative;font-size:22px;cursor:pointer;}
+.bell-dot{position:absolute;top:0;right:0;width:7px;height:7px;background:#FF9933;border-radius:50%;border:2px solid #0a0a16;}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#FF9933,#FF6B00);display:flex;align-items:center;justify-content:center;font-size:17px;}
+.coin-bar{margin-top:11px;background:linear-gradient(135deg,rgba(255,153,51,0.1),rgba(255,107,0,0.05));border:1px solid rgba(255,153,51,0.22);border-radius:14px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.coin-bar-left{display:flex;align-items:center;gap:9px;}
+.coin-bar-icon{font-size:22px;}
+.coin-bar-val{color:#F7C948;font-weight:800;font-size:13px;}
+.coin-bar-sub{color:#555;font-size:10px;}
+.coin-bar-btn{background:linear-gradient(135deg,#FF9933,#FF6B00);border-radius:9px;padding:6px 11px;color:#fff;font-weight:800;font-size:11px;}
 
-const CATS = ["All","Dance","Music","Cooking","Tech","Art"];
+/* CONTENT AREA */
+.content{flex:1;overflow-y:auto;padding-bottom:80px;}
 
-export default function SkillFlash() {
-  const [tab, setTab] = useState("feed");
-  const [cat, setCat] = useState("All");
-  const [fired, setFired] = useState({});
-  const [showNotif, setShowNotif] = useState(false);
-  const [uploadStep, setUploadStep] = useState(0);
-  const [recording, setRecording] = useState(false);
-  const [recTime, setRecTime] = useState(180);
-  const [coins, setCoins] = useState(320);
-  const [actions, setActions] = useState(EARN_ACTIONS.map(a=>({...a,done:false})));
-  const [showEarnPopup, setShowEarnPopup] = useState(false);
-  const [earnedMsg, setEarnedMsg] = useState("");
-  const [countdown, setCountdown] = useState(3);
-  const timerRef = useRef(null);
+/* CATEGORIES */
+.cats{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;}
+.cat{background:rgba(255,255,255,0.04);border:1px solid #1e1e2e;border-radius:20px;padding:5px 14px;color:#666;font-size:12px;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.cat.active{background:linear-gradient(135deg,#FF9933,#FF6B00);border:none;color:#fff;font-weight:700;}
 
-  useEffect(() => {
-    const t = setTimeout(() => setShowNotif(true), 2500);
-    return () => clearTimeout(t);
-  }, []);
+/* POST CARD */
+.post{background:rgba(255,255,255,0.02);border:1px solid #181828;border-radius:20px;margin:0 13px 14px;overflow:hidden;}
+.post-thumb{height:180px;display:flex;align-items:center;justify-content:center;font-size:66px;position:relative;}
+.post-badge{position:absolute;top:10px;left:10px;border-radius:8px;padding:3px 9px;font-weight:700;font-size:10px;}
+.post-dur{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border-radius:8px;padding:3px 8px;color:#999;font-size:10px;}
+.post-earned{position:absolute;bottom:10px;right:10px;background:linear-gradient(135deg,rgba(247,201,72,0.9),rgba(255,107,0,0.9));border-radius:8px;padding:4px 10px;color:#fff;font-weight:900;font-size:11px;}
+.post-body{padding:11px 13px;}
+.post-user-row{display:flex;align-items:center;gap:9px;margin-bottom:8px;}
+.post-ava{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid;}
+.post-name{flex:1;color:#e0e0f0;font-weight:700;font-size:13px;}
+.post-time{color:#333;font-size:10px;margin-top:1px;}
+.post-tag{border-radius:8px;padding:3px 8px;font-size:10px;font-weight:600;}
+.post-desc{color:#606080;font-size:12px;margin-bottom:9px;line-height:1.5;}
+.post-stats{display:flex;gap:7px;margin-bottom:9px;}
+.stat-pill{background:rgba(255,255,255,0.04);border-radius:8px;padding:4px 9px;font-size:11px;color:#777;}
+.stat-coin{background:rgba(247,201,72,0.09);color:#F7C948;font-weight:700;}
+.stat-earn{background:rgba(52,211,153,0.09);color:#34D399;font-weight:700;}
+.post-actions{display:flex;gap:7px;}
+.btn-fire{background:rgba(255,255,255,0.04);border:1px solid #1e1e2e;border-radius:10px;padding:8px 12px;cursor:pointer;color:#666;font-weight:700;font-size:13px;transition:all 0.2s;}
+.btn-fire.active{background:rgba(255,107,53,0.13);border-color:rgba(255,107,53,0.35);color:#FF6B35;}
+.btn-comment{background:rgba(255,255,255,0.04);border:1px solid #1e1e2e;border-radius:10px;padding:8px 11px;cursor:pointer;color:#666;font-size:13px;}
+.btn-challenge{flex:1;background:linear-gradient(135deg,rgba(255,153,51,0.12),rgba(255,107,0,0.06));border:1px solid rgba(255,153,51,0.25);border-radius:10px;padding:8px 12px;cursor:pointer;color:#FF9933;font-weight:700;font-size:12px;}
 
-  useEffect(() => {
-    if (uploadStep === 1) {
-      let c = 3; setCountdown(3);
-      const cd = setInterval(() => {
-        c--; setCountdown(c);
-        if (c <= 0) { clearInterval(cd); setUploadStep(2); setRecording(true); setRecTime(180); }
-      }, 1000);
-      return () => clearInterval(cd);
-    }
-  }, [uploadStep]);
+/* EARN TAB */
+.wallet-card{background:linear-gradient(135deg,#1a0800,#2a1000);border:2px solid rgba(255,153,51,0.35);border-radius:20px;padding:16px;margin:14px 13px 13px;}
+.wallet-title{color:#FF9933;font-weight:800;font-size:11px;letter-spacing:2px;margin-bottom:6px;}
+.wallet-coins{font-size:42px;font-weight:900;color:#fff;line-height:1;}
+.wallet-sub{color:#777;font-size:12px;margin-top:3px;}
+.wallet-sub span{color:#F7C948;font-weight:700;}
+.wallet-bar{height:5px;background:#1a0800;border-radius:10px;margin-top:10px;overflow:hidden;}
+.wallet-fill{height:100%;background:linear-gradient(90deg,#FF9933,#FF6B00);border-radius:10px;transition:width 0.5s;}
+.wallet-hint{font-size:10px;color:#FF9933;margin-top:4px;text-align:right;}
+.upi-row{display:flex;gap:6px;margin-top:12px;}
+.upi-btn{flex:1;border:none;border-radius:10px;color:#fff;font-weight:800;font-size:10px;padding:9px 4px;cursor:pointer;}
 
-  useEffect(() => {
-    if (recording) {
-      timerRef.current = setInterval(() => {
-        setRecTime(t => {
-          if (t <= 1) { clearInterval(timerRef.current); setRecording(false); setUploadStep(3); return 0; }
-          return t - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timerRef.current);
-    }
-  }, [recording]);
+.earn-section-title{color:#FF9933;font-weight:800;font-size:12px;margin:0 13px 8px;letter-spacing:1px;}
+.earn-action{background:rgba(255,255,255,0.02);border:1px solid #181828;border-radius:14px;padding:11px 13px;margin:0 13px 8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all 0.2s;}
+.earn-action.done{background:rgba(52,211,153,0.05);border-color:rgba(52,211,153,0.25);}
+.earn-action-icon{font-size:22px;}
+.earn-action-label{flex:1;color:#e0e0f0;font-weight:600;font-size:13px;}
+.earn-action-sub{color:#444;font-size:10px;margin-top:1px;}
+.earn-action.done .earn-action-label{color:#34D399;}
+.earn-coin-badge{background:rgba(247,201,72,0.12);border-radius:9px;padding:5px 10px;color:#F7C948;font-weight:800;font-size:13px;}
+.earn-action.done .earn-coin-badge{background:rgba(52,211,153,0.12);color:#34D399;}
 
-  const doAction = (i) => {
-    const a = actions[i];
-    if (a.done) return;
-    const na = [...actions]; na[i] = {...a, done:true};
-    setActions(na);
-    setCoins(c => c + a.coins);
-    setEarnedMsg(`+${a.coins} coins! 🪙`);
-    setShowEarnPopup(true);
-    setTimeout(() => setShowEarnPopup(false), 2000);
-  };
+.brand-card{background:rgba(255,255,255,0.02);border-radius:14px;padding:11px 13px;margin:0 13px 8px;display:flex;align-items:center;gap:10px;}
+.brand-logo{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;}
+.brand-name{color:#e0e0f0;font-weight:700;font-size:12px;}
+.brand-prize{font-size:11px;font-weight:700;margin-top:2px;}
+.brand-join{border:none;border-radius:9px;color:#fff;font-weight:800;font-size:11px;padding:7px 11px;cursor:pointer;}
 
-  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+"k" : n;
-  const posts = cat === "All" ? POSTS : POSTS.filter(p => p.tag === cat);
+/* LEADERBOARD */
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:10px;padding:14px 13px 0;}
+.pod-item{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.pod-ava{font-size:22px;}
+.pod-ava.big{font-size:28px;}
+.pod-bar{border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;}
+.pod-name{font-size:10px;color:#777;}
+.pod-name.gold{color:#F7C948;font-weight:700;}
 
-  return (
-    <div style={{minHeight:"100vh",background:"#060612",display:"flex",justifyContent:"center",alignItems:"center",padding:"16px",fontFamily:"'Segoe UI',sans-serif"}}>
-      <div style={{width:390,minHeight:780,maxHeight:860,background:"#0f0f1a",borderRadius:44,border:"2px solid #1e1e30",boxShadow:"0 0 80px rgba(255,107,0,0.12),0 40px 80px rgba(0,0,0,0.8)",overflow:"hidden",position:"relative",display:"flex",flexDirection:"column"}}>
+.rank-title{color:#FF9933;font-weight:800;font-size:14px;margin:12px 13px 3px;}
+.rank-sub{color:#333;font-size:11px;margin:0 13px 12px;}
+.rank-row{background:rgba(255,255,255,0.02);border:1px solid #181828;border-radius:16px;padding:11px 13px;margin:0 13px 9px;display:flex;align-items:center;gap:11px;}
+.rank-row.me{background:linear-gradient(135deg,rgba(255,153,51,0.09),rgba(255,107,0,0.05));border-color:rgba(255,153,51,0.3);}
+.rank-num{font-size:16px;width:25px;text-align:center;font-weight:900;}
+.rank-ava{font-size:24px;}
+.rank-name{flex:1;color:#e0e0f0;font-weight:700;font-size:13px;}
+.rank-name.me{color:#FF9933;}
+.rank-streak{color:#333;font-size:10px;}
+.rank-earned{color:#34D399;font-weight:800;font-size:14px;text-align:right;}
+.rank-week{color:#333;font-size:9px;}
 
-        {/* NOTIFICATION */}
-        {showNotif && (
-          <div style={{position:"absolute",top:14,left:14,right:14,zIndex:200,background:"linear-gradient(135deg,#1a0800,#2a1000)",border:"1.5px solid rgba(255,153,51,0.5)",borderRadius:22,padding:"14px 16px",boxShadow:"0 8px 40px rgba(0,0,0,0.8)",display:"flex",alignItems:"center",gap:12,animation:"slideDown 0.4s ease"}}>
-            <div style={{fontSize:28}}>⚡</div>
-            <div style={{flex:1}}>
-              <div style={{color:"#FF9933",fontWeight:800,fontSize:12,letterSpacing:1}}>SKILLFLASH ALERT!</div>
-              <div style={{color:"#e0e0ff",fontSize:11,marginTop:2}}>Skill দেখাও → <b style={{color:"#F7C948"}}>₹100+ earn করো</b> আজই! 🔥</div>
-            </div>
-            <button onClick={()=>{setShowNotif(false);setTab("upload");setUploadStep(1);}} style={{background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:10,color:"#fff",fontWeight:900,fontSize:11,padding:"8px 12px",cursor:"pointer"}}>GO!</button>
-            <button onClick={()=>setShowNotif(false)} style={{background:"none",border:"none",color:"#444",fontSize:18,cursor:"pointer"}}>×</button>
-          </div>
-        )}
+.cta-box{background:linear-gradient(135deg,#1a0800,#2a0800);border:1.5px solid rgba(255,153,51,0.25);border-radius:18px;padding:16px;text-align:center;margin:6px 13px;}
+.cta-icon{font-size:30px;margin-bottom:7px;}
+.cta-title{color:#FF9933;font-weight:800;font-size:15px;margin-bottom:5px;}
+.cta-sub{color:#555;font-size:12px;margin-bottom:12px;}
+.cta-btn{width:100%;background:linear-gradient(135deg,#FF9933,#FF6B00);border:none;border-radius:13px;color:#fff;font-weight:900;font-size:15px;padding:13px;cursor:pointer;}
 
-        {/* EARN POPUP */}
-        {showEarnPopup && (
-          <div style={{position:"absolute",top:"42%",left:"50%",transform:"translate(-50%,-50%)",zIndex:300,background:"linear-gradient(135deg,#F7C948,#FF6B00)",borderRadius:20,padding:"18px 32px",textAlign:"center",boxShadow:"0 0 50px rgba(247,201,72,0.5)"}}>
-            <div style={{fontSize:36}}>🪙</div>
-            <div style={{color:"#fff",fontWeight:900,fontSize:20,marginTop:4}}>{earnedMsg}</div>
-          </div>
-        )}
+/* UPLOAD */
+.upload-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px;}
+.upload-intro{text-align:center;width:100%;}
+.upload-icon{font-size:54px;margin-bottom:13px;}
+.upload-title{color:#FF9933;font-weight:900;font-size:21px;margin-bottom:6px;}
+.upload-sub{color:#555;font-size:13px;margin-bottom:18px;line-height:1.7;}
+.earn-table{background:rgba(255,255,255,0.02);border:1px solid #1e1e2e;border-radius:16px;padding:14px;margin-bottom:16px;width:100%;}
+.earn-table-title{color:#FF9933;font-weight:800;font-size:12px;margin-bottom:9px;letter-spacing:1px;}
+.earn-table-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #10101e;}
+.earn-table-row:last-child{border-bottom:none;}
+.earn-table-v{color:#666;font-size:12px;}
+.earn-table-e{color:#F7C948;font-weight:700;font-size:12px;}
+.start-btn{width:100%;background:linear-gradient(135deg,#FF9933,#FF6B00);border:none;border-radius:15px;color:#fff;font-weight:900;font-size:16px;padding:14px;cursor:pointer;box-shadow:0 0 22px rgba(255,153,51,0.35);margin-bottom:12px;}
+.back-btn{background:none;border:none;color:#333;font-size:13px;cursor:pointer;}
 
-        {/* HEADER */}
-        <div style={{padding:"50px 20px 14px",background:"#0a0a16",borderBottom:"1px solid #181828",flexShrink:0}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div>
-              <div style={{fontWeight:900,fontSize:26,background:"linear-gradient(90deg,#FF9933,#FF6B00)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:-1}}>⚡ SkillFlash</div>
-              <div style={{color:"#444",fontSize:11,marginTop:1}}>🇮🇳 India's Skill Earning App</div>
-            </div>
-            <div style={{display:"flex",gap:10,alignItems:"center"}}>
-              <div onClick={()=>setShowNotif(true)} style={{position:"relative",cursor:"pointer",fontSize:22}}>🔔
-                <div style={{position:"absolute",top:0,right:0,width:7,height:7,background:"#FF9933",borderRadius:"50%",border:"2px solid #0a0a16"}}/>
-              </div>
-              <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>😎</div>
-            </div>
-          </div>
-          {/* Coin bar */}
-          <div onClick={()=>setTab("earn")} style={{marginTop:12,background:"linear-gradient(135deg,rgba(255,153,51,0.1),rgba(255,107,0,0.05))",border:"1px solid rgba(255,153,51,0.22)",borderRadius:16,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9}}>
-              <span style={{fontSize:24}}>🪙</span>
-              <div>
-                <div style={{color:"#F7C948",fontWeight:800,fontSize:13}}>{coins} Coins = ₹{Math.floor(coins*0.15)}</div>
-                <div style={{color:"#555",fontSize:10}}>Skill দেখাও → Earn করো → UPI তে তোলো</div>
-              </div>
-            </div>
-            <div style={{background:"linear-gradient(135deg,#FF9933,#FF6B00)",borderRadius:10,padding:"6px 12px",color:"#fff",fontWeight:800,fontSize:11}}>Earn →</div>
-          </div>
-        </div>
+.countdown-view{text-align:center;}
+.countdown-num{font-size:90px;font-weight:900;color:#FF9933;line-height:1;}
+.countdown-label{color:#FF9933;font-weight:700;font-size:18px;margin-top:10px;}
+.countdown-sub{color:#444;font-size:13px;margin-top:6px;}
 
-        {/* ── FEED ── */}
-        {tab==="feed" && (
-          <div style={{flex:1,overflowY:"auto"}}>
-            <div style={{display:"flex",gap:7,padding:"11px 16px",overflowX:"auto"}}>
-              {CATS.map(c=>(
-                <button key={c} onClick={()=>setCat(c)} style={{background:cat===c?"linear-gradient(135deg,#FF9933,#FF6B00)":"rgba(255,255,255,0.04)",border:cat===c?"none":"1px solid #1e1e2e",borderRadius:20,padding:"6px 15px",color:cat===c?"#fff":"#666",fontWeight:cat===c?700:400,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
-                  {c}
-                </button>
-              ))}
-            </div>
-            <div style={{padding:"0 15px 110px"}}>
-              {posts.map(post=>(
-                <div key={post.id} style={{background:"rgba(255,255,255,0.02)",border:"1px solid #181828",borderRadius:22,marginBottom:16,overflow:"hidden"}}>
-                  <div style={{height:185,background:`linear-gradient(135deg,${post.color}1a,${post.color}08)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:68,position:"relative"}}>
-                    {post.emoji}
-                    <div style={{position:"absolute",top:11,left:11,background:post.color+"2a",border:`1px solid ${post.color}55`,borderRadius:9,padding:"3px 9px",color:post.color,fontWeight:700,fontSize:11}}>{post.badge}</div>
-                    <div style={{position:"absolute",top:11,right:11,background:"rgba(0,0,0,0.6)",borderRadius:9,padding:"3px 9px",color:"#999",fontSize:10}}>⏱ 3:00</div>
-                    <div style={{position:"absolute",bottom:11,right:11,background:"linear-gradient(135deg,rgba(247,201,72,0.88),rgba(255,107,0,0.88))",borderRadius:9,padding:"5px 11px",color:"#fff",fontWeight:900,fontSize:12}}>💰 {post.earned} earned</div>
-                  </div>
-                  <div style={{padding:"12px 14px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:8}}>
-                      <div style={{width:34,height:34,borderRadius:"50%",background:post.color+"18",border:`2px solid ${post.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>{post.avatar}</div>
-                      <div style={{flex:1}}>
-                        <div style={{color:"#e0e0f8",fontWeight:700,fontSize:13}}>{post.user}</div>
-                        <div style={{color:"#3a3a4a",fontSize:10}}>{post.time} · 🔥 {post.streak} day streak</div>
-                      </div>
-                      <div style={{background:post.color+"16",border:`1px solid ${post.color}30`,borderRadius:9,padding:"3px 9px",color:post.color,fontSize:10,fontWeight:600}}>#{post.tag}</div>
-                    </div>
-                    <div style={{color:"#6868888",fontSize:12,marginBottom:10,lineHeight:1.5,color:"#7070909"}}>{post.desc}</div>
-                    <div style={{display:"flex",gap:7,marginBottom:10}}>
-                      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#777"}}>👁 {fmt(post.views)}</div>
-                      <div style={{background:"rgba(247,201,72,0.09)",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#F7C948",fontWeight:700}}>🪙 {post.coins}</div>
-                      <div style={{background:"rgba(52,211,153,0.09)",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#34D399",fontWeight:700}}>💰 {post.earned}</div>
-                    </div>
-                    <div style={{display:"flex",gap:7}}>
-                      <button onClick={()=>setFired(f=>({...f,[post.id]:!f[post.id]}))} style={{background:fired[post.id]?"rgba(255,107,53,0.13)":"rgba(255,255,255,0.04)",border:fired[post.id]?"1px solid rgba(255,107,53,0.35)":"1px solid #1e1e2e",borderRadius:11,padding:"8px 13px",cursor:"pointer",color:fired[post.id]?"#FF6B35":"#666",fontWeight:700,fontSize:13}}>
-                        🔥 {post.coins+(fired[post.id]?1:0)}
-                      </button>
-                      <button style={{background:"rgba(255,255,255,0.04)",border:"1px solid #1e1e2e",borderRadius:11,padding:"8px 11px",cursor:"pointer",color:"#666",fontSize:13}}>💬</button>
-                      <button style={{flex:1,background:"linear-gradient(135deg,rgba(255,153,51,0.12),rgba(255,107,0,0.06))",border:"1px solid rgba(255,153,51,0.25)",borderRadius:11,padding:"8px 13px",cursor:"pointer",color:"#FF9933",fontWeight:700,fontSize:12}}>⚡ Challenge</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+.cam-view{width:100%;}
+.cam-box{width:100%;height:220px;background:linear-gradient(135deg,#1a0800,#0a0a18);border-radius:20px;margin-bottom:13px;display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;border:2.5px solid #FF9933;box-shadow:0 0 26px rgba(255,153,51,0.25);}
+.cam-rec{position:absolute;top:10px;right:10px;background:#FF9933;border-radius:7px;padding:3px 9px;color:#fff;font-weight:900;font-size:11px;display:flex;align-items:center;gap:4px;}
+.rec-dot{width:7px;height:7px;background:#fff;border-radius:50%;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cam-timer{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.75);border-radius:7px;padding:4px 11px;color:#F7C948;font-weight:900;font-size:14px;}
+.cam-live{position:absolute;bottom:10px;right:10px;background:rgba(52,211,153,0.18);border-radius:7px;padding:3px 9px;color:#34D399;font-size:9px;font-weight:700;}
+.cam-progress{height:4px;background:#1a0800;border-radius:10px;margin-bottom:12px;overflow:hidden;}
+.cam-fill{height:100%;background:linear-gradient(90deg,#FF9933,#FF6B00);border-radius:10px;transition:width 1s linear;}
+.stop-btn{width:100%;background:linear-gradient(135deg,#FF9933,#FF6B00);border:none;border-radius:14px;color:#fff;font-weight:900;font-size:15px;padding:13px;cursor:pointer;}
 
-        {/* ── EARN ── */}
-        {tab==="earn" && (
-          <div style={{flex:1,overflowY:"auto",padding:"15px 15px 110px"}}>
-            {/* Wallet card */}
-            <div style={{background:"linear-gradient(135deg,#1a0800,#2a1000)",border:"2px solid rgba(255,153,51,0.35)",borderRadius:22,padding:"18px",marginBottom:16}}>
-              <div style={{color:"#FF9933",fontWeight:800,fontSize:11,letterSpacing:2,marginBottom:6}}>⚡ MY SKILLWALLET</div>
-              <div style={{fontSize:44,fontWeight:900,color:"#fff",lineHeight:1}}>{coins} <span style={{fontSize:22}}>🪙</span></div>
-              <div style={{color:"#777",fontSize:12,marginTop:4}}>= <span style={{color:"#F7C948",fontWeight:700}}>₹{Math.floor(coins*0.15)}</span> withdraw করা যাবে</div>
-              <div style={{height:5,background:"#1a0800",borderRadius:10,marginTop:11,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${Math.min(coins/40,100)}%`,background:"linear-gradient(90deg,#FF9933,#FF6B00)",borderRadius:10,transition:"width 0.5s"}}/>
-              </div>
-              <div style={{fontSize:10,color:"#FF9933",marginTop:4,textAlign:"right"}}>₹500 হলে withdraw করো!</div>
-              <div style={{display:"flex",gap:7,marginTop:13}}>
-                {[["📱","PhonePe","#6739b7"],["🔵","GPay","#1a73e8"],["🔷","Paytm","#00BAF2"]].map(([ic,n,bg])=>(
-                  <button key={n} style={{flex:1,background:bg,border:"none",borderRadius:11,color:"#fff",fontWeight:800,fontSize:11,padding:"10px 4px",cursor:"pointer"}}>{ic} {n}</button>
-                ))}
-              </div>
-            </div>
+.post-view{width:100%;}
+.preview-box{width:100%;height:130px;background:rgba(255,255,255,0.02);border-radius:18px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:46px;border:1px solid #1e1e2e;}
+.post-input{width:100%;background:#18182a;border:1px solid #22223a;border-radius:12px;padding:11px 14px;color:#e0e0f0;font-size:13px;margin-bottom:8px;outline:none;font-family:'Segoe UI',sans-serif;}
+.post-hint{background:rgba(52,211,153,0.05);border:1px solid rgba(52,211,153,0.18);border-radius:12px;padding:10px;margin-bottom:12px;}
+.post-hint-title{color:#34D399;font-weight:700;font-size:12px;margin-bottom:5px;}
+.post-hint-text{color:#555;font-size:11px;line-height:1.8;}
+.post-submit{width:100%;background:linear-gradient(135deg,#34D399,#FF9933);border:none;border-radius:14px;color:#fff;font-weight:900;font-size:15px;padding:13px;cursor:pointer;}
 
-            <div style={{color:"#FF9933",fontWeight:800,fontSize:12,marginBottom:9,letterSpacing:1}}>🎯 আজ করো — Coins পাও</div>
-            {actions.map((a,i)=>(
-              <div key={i} onClick={()=>doAction(i)} style={{background:a.done?"rgba(52,211,153,0.05)":"rgba(255,255,255,0.02)",border:a.done?"1px solid rgba(52,211,153,0.25)":"1px solid #181828",borderRadius:15,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:11,cursor:a.done?"default":"pointer"}}>
-                <div style={{fontSize:22}}>{a.icon}</div>
-                <div style={{flex:1}}>
-                  <div style={{color:a.done?"#34D399":"#e0e0f0",fontWeight:600,fontSize:13}}>{a.label}</div>
-                  <div style={{color:"#444",fontSize:10,marginTop:1}}>{a.done?"✅ Done!":"Tap to complete"}</div>
-                </div>
-                <div style={{background:a.done?"rgba(52,211,153,0.12)":"rgba(247,201,72,0.12)",borderRadius:9,padding:"5px 11px",color:a.done?"#34D399":"#F7C948",fontWeight:800,fontSize:13}}>+{a.coins} 🪙</div>
-              </div>
-            ))}
+/* BOTTOM NAV */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;background:rgba(6,6,18,0.97);border-top:1px solid #181828;padding:9px 0 20px;display:flex;justify-content:space-around;align-items:center;backdrop-filter:blur(20px);}
+.nav-item{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 8px;}
+.nav-icon{font-size:21px;}
+.nav-label{font-size:9px;color:#2a2a3a;font-weight:400;transition:color 0.2s;}
+.nav-label.active{color:#FF9933;font-weight:700;}
+.nav-flash{width:54px;height:54px;background:linear-gradient(135deg,#FF9933,#FF6B00);border:none;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;margin-top:-13px;box-shadow:0 0 22px rgba(255,153,51,0.45);}
+</style>
+</head>
+<body>
 
-            <div style={{color:"#FF9933",fontWeight:800,fontSize:12,margin:"15px 0 9px",letterSpacing:1}}>🏆 Brand Campaigns</div>
-            {BRANDS.map((b,i)=>(
-              <div key={i} style={{background:`linear-gradient(135deg,${b.color}0e,${b.color}06)`,border:`1px solid ${b.color}2a`,borderRadius:15,padding:"11px 13px",marginBottom:8,display:"flex",alignItems:"center",gap:11}}>
-                <div style={{width:38,height:38,borderRadius:11,background:b.color+"1a",border:`1.5px solid ${b.color}3a`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19}}>{b.icon}</div>
-                <div style={{flex:1}}>
-                  <div style={{color:"#e0e0f0",fontWeight:700,fontSize:12}}>{b.name}</div>
-                  <div style={{color:b.color,fontSize:11,marginTop:2,fontWeight:700}}>{b.prize} · {b.days} days left</div>
-                </div>
-                <button style={{background:b.color,border:"none",borderRadius:9,color:"#fff",fontWeight:800,fontSize:11,padding:"7px 11px",cursor:"pointer"}}>Join!</button>
-              </div>
-            ))}
-          </div>
-        )}
+<div class="phone" id="app">
 
-        {/* ── LEADERBOARD ── */}
-        {tab==="rank" && (
-          <div style={{flex:1,overflowY:"auto",padding:"15px 15px 110px"}}>
-            {/* Podium */}
-            <div style={{display:"flex",justifyContent:"center",alignItems:"flex-end",gap:10,marginBottom:18}}>
-              {[{n:"NadiaSings",av:"🎤",h:58,bg:"linear-gradient(180deg,#bbb,#999)",rank:"2"},
-                {n:"Priya",av:"💃",h:80,bg:"linear-gradient(180deg,#F7C948,#FF9933)",rank:"👑",big:true},
-                {n:"Megha",av:"🎨",h:44,bg:"linear-gradient(180deg,#cd7f32,#a0522d)",rank:"3"}
-              ].map(p=>(
-                <div key={p.n} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                  <div style={{fontSize:p.big?28:22}}>{p.av}</div>
-                  <div style={{width:p.big?76:64,height:p.h,background:p.bg,borderRadius:"8px 8px 0 0",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:p.big?20:16}}>{p.rank}</div>
-                  <div style={{fontSize:10,color:p.big?"#F7C948":"#777",fontWeight:p.big?700:400}}>{p.n}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{color:"#FF9933",fontWeight:800,fontSize:14,marginBottom:4}}>👑 Top Earners — This Week</div>
-            <div style={{color:"#3a3a5a",fontSize:11,marginBottom:13}}>Viral হলে তুমিও এখানে আসবে!</div>
-
-            {LEADERBOARD.map(u=>(
-              <div key={u.rank} style={{background:u.isMe?"linear-gradient(135deg,rgba(255,153,51,0.09),rgba(255,107,0,0.05))":"rgba(255,255,255,0.02)",border:u.isMe?"1px solid rgba(255,153,51,0.3)":"1px solid #181828",borderRadius:17,padding:"12px 14px",marginBottom:9,display:"flex",alignItems:"center",gap:12}}>
-                <div style={{fontSize:17,width:26,textAlign:"center",fontWeight:900,color:u.rank===1?"#F7C948":u.rank===2?"#aaa":u.rank===3?"#cd7f32":"#333"}}>{u.rank===1?"👑":u.rank}</div>
-                <div style={{fontSize:24}}>{u.avatar}</div>
-                <div style={{flex:1}}>
-                  <div style={{color:u.isMe?"#FF9933":"#e0e0f0",fontWeight:700,fontSize:13}}>{u.user}</div>
-                  <div style={{color:"#3a3a5a",fontSize:10}}>🔥 {u.streak} streak · 👁 {u.views}</div>
-                </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{color:"#34D399",fontWeight:800,fontSize:14}}>{u.earned}</div>
-                  <div style={{color:"#3a3a5a",fontSize:9}}>this week</div>
-                </div>
-              </div>
-            ))}
-
-            <div style={{background:"linear-gradient(135deg,#1a0800,#2a0800)",border:"1.5px solid rgba(255,153,51,0.25)",borderRadius:20,padding:"18px",textAlign:"center",marginTop:6}}>
-              <div style={{fontSize:30,marginBottom:7}}>🚀</div>
-              <div style={{color:"#FF9933",fontWeight:800,fontSize:15,marginBottom:5}}>তুমিও Top এ আসো!</div>
-              <div style={{color:"#555",fontSize:12,marginBottom:13}}>আজই skill post করো → views বাড়াও → ₹ earn করো</div>
-              <button onClick={()=>{setTab("upload");setUploadStep(0);}} style={{width:"100%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:14,color:"#fff",fontWeight:900,fontSize:15,padding:"13px",cursor:"pointer"}}>⚡ এখনই Flash করো!</button>
-            </div>
-          </div>
-        )}
-
-        {/* ── UPLOAD ── */}
-        {tab==="upload" && (
-          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"22px 18px"}}>
-
-            {uploadStep===0 && (
-              <div style={{textAlign:"center",width:"100%"}}>
-                <div style={{fontSize:56,marginBottom:14}}>📹</div>
-                <div style={{color:"#FF9933",fontWeight:900,fontSize:22,marginBottom:7}}>⚡ Flash Your Skill!</div>
-                <div style={{color:"#555",fontSize:13,marginBottom:20,lineHeight:1.7}}>৩ মিনিটে skill দেখাও<br/><span style={{color:"#F7C948",fontWeight:700}}>Views = Coins = ₹ Real Money</span></div>
-                <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid #1e1e2e",borderRadius:18,padding:"16px",marginBottom:18,textAlign:"left"}}>
-                  <div style={{color:"#FF9933",fontWeight:800,fontSize:12,marginBottom:10,letterSpacing:1}}>💰 কত পাবে?</div>
-                  {[["500 views","10 🪙 = ₹1.5"],["5,000 views","100 🪙 = ₹15"],["50,000 views","1,000 🪙 = ₹150"],["Viral (1L views)","10,000 🪙 = ₹1,500"]].map(([v,e])=>(
-                    <div key={v} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid #10101e"}}>
-                      <span style={{color:"#666",fontSize:12}}>👁 {v}</span>
-                      <span style={{color:"#F7C948",fontWeight:700,fontSize:12}}>{e}</span>
-                    </div>
-                  ))}
-                </div>
-                <button onClick={()=>setUploadStep(1)} style={{width:"100%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:16,color:"#fff",fontWeight:900,fontSize:16,padding:"15px",cursor:"pointer",boxShadow:"0 0 24px rgba(255,153,51,0.35)"}}>📹 শুরু করো!</button>
-                <button onClick={()=>setTab("feed")} style={{background:"none",border:"none",color:"#333",fontSize:13,marginTop:13,cursor:"pointer"}}>← ফিরে যাও</button>
-              </div>
-            )}
-
-            {uploadStep===1 && (
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:90,fontWeight:900,color:"#FF9933",lineHeight:1}}>{countdown}</div>
-                <div style={{color:"#FF9933",fontWeight:700,fontSize:18,marginTop:12}}>তৈরি হও!</div>
-                <div style={{color:"#444",fontSize:13,marginTop:6}}>Camera শুরু হচ্ছে...</div>
-              </div>
-            )}
-
-            {uploadStep===2 && (
-              <div style={{width:"100%"}}>
-                <div style={{width:"100%",height:230,background:"linear-gradient(135deg,#1a0800,#0a0a18)",borderRadius:22,marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:58,position:"relative",border:"2.5px solid #FF9933",boxShadow:"0 0 28px rgba(255,153,51,0.25)"}}>
-                  📹
-                  <div style={{position:"absolute",top:11,right:11,background:"#FF9933",borderRadius:7,padding:"3px 9px",color:"#fff",fontWeight:900,fontSize:11,display:"flex",alignItems:"center",gap:4}}>
-                    <div style={{width:7,height:7,background:"#fff",borderRadius:"50%",animation:"blink 1s infinite"}}/>REC
-                  </div>
-                  <div style={{position:"absolute",bottom:11,left:11,background:"rgba(0,0,0,0.75)",borderRadius:7,padding:"4px 11px",color:"#F7C948",fontWeight:900,fontSize:14}}>
-                    {Math.floor(recTime/60)}:{String(recTime%60).padStart(2,"0")}
-                  </div>
-                  <div style={{position:"absolute",bottom:11,right:11,background:"rgba(52,211,153,0.18)",borderRadius:7,padding:"3px 9px",color:"#34D399",fontSize:9,fontWeight:700}}>🔴 3 watching</div>
-                </div>
-                <div style={{height:4,background:"#1a0800",borderRadius:10,marginBottom:13,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${((180-recTime)/180)*100}%`,background:"linear-gradient(90deg,#FF9933,#FF6B00)",borderRadius:10,transition:"width 1s linear"}}/>
-                </div>
-                <button onClick={()=>{clearInterval(timerRef.current);setRecording(false);setUploadStep(3);}} style={{width:"100%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:15,color:"#fff",fontWeight:900,fontSize:15,padding:"13px",cursor:"pointer"}}>⬛ Stop & Post</button>
-              </div>
-            )}
-
-            {uploadStep===3 && (
-              <div style={{width:"100%",textAlign:"center"}}>
-                <div style={{width:"100%",height:140,background:"rgba(255,255,255,0.02)",borderRadius:20,marginBottom:13,display:"flex",alignItems:"center",justifyContent:"center",fontSize:48,border:"1px solid #1e1e2e"}}>🎬</div>
-                <input placeholder="তোমার skill কী? (Dance, Cooking...)" style={{width:"100%",background:"#18182a",border:"1px solid #22223a",borderRadius:13,padding:"12px 15px",color:"#e0e0f0",fontSize:13,marginBottom:9,boxSizing:"border-box",outline:"none"}}/>
-                <input placeholder="Caption — কেন দেখা উচিত? 🔥" style={{width:"100%",background:"#18182a",border:"1px solid #22223a",borderRadius:13,padding:"12px 15px",color:"#e0e0f0",fontSize:13,marginBottom:14,boxSizing:"border-box",outline:"none"}}/>
-                <div style={{background:"rgba(52,211,153,0.05)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:13,padding:"11px",marginBottom:13,textAlign:"left"}}>
-                  <div style={{color:"#34D399",fontWeight:700,fontSize:12,marginBottom:5}}>💰 Post করলেই পাবে:</div>
-                  <div style={{color:"#555",fontSize:11,lineHeight:1.8}}>✅ +10 coins তুরন্ত<br/>✅ 500 views এ +50 coins<br/>✅ Brand deal eligible হবে</div>
-                </div>
-                <button onClick={()=>{setCoins(c=>c+10);setEarnedMsg("+10 coins! 🪙");setShowEarnPopup(true);setTab("feed");setUploadStep(0);setTimeout(()=>setShowEarnPopup(false),2000);}} style={{width:"100%",background:"linear-gradient(135deg,#34D399,#FF9933)",border:"none",borderRadius:15,color:"#fff",fontWeight:900,fontSize:15,padding:"13px",cursor:"pointer"}}>🚀 Post করো — Earn শুরু হোক!</button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── BOTTOM NAV ── */}
-        <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(6,6,18,0.97)",borderTop:"1px solid #181828",backdropFilter:"blur(20px)",padding:"10px 0 22px",display:"flex",justifyContent:"space-around",alignItems:"center"}}>
-          {[{id:"feed",icon:"🏠",label:"Feed"},{id:"earn",icon:"💰",label:"Earn"},{id:null},{id:"rank",icon:"🏆",label:"Ranks"},{id:"profile",icon:"👤",label:"Profile"}].map((item,i)=>(
-            item.id===null ? (
-              <button key="flash" onClick={()=>{setTab("upload");setUploadStep(0);}} style={{width:56,height:56,background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,cursor:"pointer",marginTop:-13,boxShadow:"0 0 22px rgba(255,153,51,0.45)"}}>⚡</button>
-            ) : (
-              <button key={item.id} onClick={()=>setTab(item.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <div style={{fontSize:21}}>{item.icon}</div>
-                <div style={{fontSize:9,color:tab===item.id?"#FF9933":"#2a2a3a",fontWeight:tab===item.id?700:400}}>{item.label}</div>
-              </button>
-            )
-          ))}
-        </div>
-
-      </div>
-      <style>{`
-        @keyframes slideDown{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
-        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-        ::-webkit-scrollbar{width:0}
-      `}</style>
+  <!-- NOTIFICATION -->
+  <div class="notif" id="notif">
+    <div class="notif-icon">⚡</div>
+    <div class="notif-text">
+      <div class="notif-title">SKILLFLASH ALERT!</div>
+      <div class="notif-sub">Skill দেখাও → <b>₹100+ earn করো</b> আজই! 🔥</div>
     </div>
-  );
+    <button class="notif-go" onclick="goFlash()">GO!</button>
+    <button class="notif-close" onclick="closeNotif()">×</button>
+  </div>
+
+  <!-- EARN POPUP -->
+  <div class="earn-popup" id="earnPopup" style="display:none;">
+    <div class="earn-popup-icon">🪙</div>
+    <div class="earn-popup-text" id="earnMsg">+10 coins!</div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="logo">⚡ SkillFlash</div>
+        <div class="logo-sub">🇮🇳 India's Skill Earning App</div>
+      </div>
+      <div class="header-right">
+        <div class="bell" onclick="openNotif()">🔔<div class="bell-dot"></div></div>
+        <div class="avatar">😎</div>
+      </div>
+    </div>
+    <div class="coin-bar" onclick="showTab('earn')">
+      <div class="coin-bar-left">
+        <div class="coin-bar-icon">🪙</div>
+        <div>
+          <div class="coin-bar-val" id="coinDisplay">320 Coins = ₹48</div>
+          <div class="coin-bar-sub">Skill দেখাও → Earn করো → UPI তে তোলো</div>
+        </div>
+      </div>
+      <div class="coin-bar-btn">Earn →</div>
+    </div>
+  </div>
+
+  <!-- ═══ FEED ═══ -->
+  <div class="content" id="tab-feed">
+    <div class="cats" id="catRow"></div>
+    <div id="postList"></div>
+  </div>
+
+  <!-- ═══ EARN ═══ -->
+  <div class="content" id="tab-earn" style="display:none;">
+    <div class="wallet-card">
+      <div class="wallet-title">⚡ MY SKILLWALLET</div>
+      <div class="wallet-coins" id="walletCoins">320 🪙</div>
+      <div class="wallet-sub">= <span id="walletRs">₹48</span> withdraw করা যাবে</div>
+      <div class="wallet-bar"><div class="wallet-fill" id="walletBar" style="width:32%;"></div></div>
+      <div class="wallet-hint">₹500 হলে withdraw করো!</div>
+      <div class="upi-row">
+        <button class="upi-btn" style="background:#6739b7;">📱 PhonePe</button>
+        <button class="upi-btn" style="background:#1a73e8;">🔵 GPay</button>
+        <button class="upi-btn" style="background:#00BAF2;">🔷 Paytm</button>
+      </div>
+    </div>
+
+    <div class="earn-section-title">🎯 আজ করো — Coins পাও</div>
+    <div id="actionList"></div>
+
+    <div class="earn-section-title" style="margin-top:14px;">🏆 Brand Campaigns</div>
+    <div id="brandList"></div>
+  </div>
+
+  <!-- ═══ LEADERBOARD ═══ -->
+  <div class="content" id="tab-rank" style="display:none;">
+    <div class="podium">
+      <div class="pod-item">
+        <div class="pod-ava">🎤</div>
+        <div class="pod-bar" style="width:64px;height:56px;background:linear-gradient(180deg,#bbb,#999);font-size:16px;">2</div>
+        <div class="pod-name">Anjali</div>
+      </div>
+      <div class="pod-item">
+        <div class="pod-ava big">💃</div>
+        <div class="pod-bar" style="width:76px;height:78px;background:linear-gradient(180deg,#F7C948,#FF9933);font-size:20px;">👑</div>
+        <div class="pod-name gold">Priya</div>
+      </div>
+      <div class="pod-item">
+        <div class="pod-ava">🎨</div>
+        <div class="pod-bar" style="width:64px;height:42px;background:linear-gradient(180deg,#cd7f32,#a0522d);font-size:16px;">3</div>
+        <div class="pod-name">Megha</div>
+      </div>
+    </div>
+
+    <div class="rank-title">👑 Top Earners — This Week</div>
+    <div class="rank-sub">Viral হলে তুমিও এখানে আসবে!</div>
+    <div id="rankList"></div>
+
+    <div class="cta-box">
+      <div class="cta-icon">🚀</div>
+      <div class="cta-title">তুমিও Top এ আসো!</div>
+      <div class="cta-sub">আজই skill post করো → views বাড়াও → ₹ earn করো</div>
+      <button class="cta-btn" onclick="goFlash()">⚡ এখনই Flash করো!</button>
+    </div>
+  </div>
+
+  <!-- ═══ UPLOAD ═══ -->
+  <div class="content" id="tab-upload" style="display:none;">
+    <div class="upload-area">
+
+      <!-- Step 0: Intro -->
+      <div id="step0" class="upload-intro">
+        <div class="upload-icon">📹</div>
+        <div class="upload-title">⚡ Flash Your Skill!</div>
+        <div class="upload-sub">৩ মিনিটে skill দেখাও<br/><span style="color:#F7C948;font-weight:700;">Views = Coins = ₹ Real Money</span></div>
+        <div class="earn-table">
+          <div class="earn-table-title">💰 কত পাবে?</div>
+          <div class="earn-table-row"><span class="earn-table-v">👁 500 views</span><span class="earn-table-e">10 🪙 = ₹1.5</span></div>
+          <div class="earn-table-row"><span class="earn-table-v">👁 5,000 views</span><span class="earn-table-e">100 🪙 = ₹15</span></div>
+          <div class="earn-table-row"><span class="earn-table-v">👁 50,000 views</span><span class="earn-table-e">1,000 🪙 = ₹150</span></div>
+          <div class="earn-table-row"><span class="earn-table-v">🚀 Viral (1L views)</span><span class="earn-table-e">10,000 🪙 = ₹1,500</span></div>
+        </div>
+        <button class="start-btn" onclick="startRecord()">📹 শুরু করো!</button>
+        <button class="back-btn" onclick="showTab('feed')">← ফিরে যাও</button>
+      </div>
+
+      <!-- Step 1: Countdown -->
+      <div id="step1" class="countdown-view" style="display:none;">
+        <div class="countdown-num" id="cdNum">3</div>
+        <div class="countdown-label">তৈরি হও!</div>
+        <div class="countdown-sub">Camera শুরু হচ্ছে...</div>
+      </div>
+
+      <!-- Step 2: Recording -->
+      <div id="step2" class="cam-view" style="display:none;">
+        <div class="cam-box">
+          📹
+          <div class="cam-rec"><div class="rec-dot"></div>REC</div>
+          <div class="cam-timer" id="camTimer">3:00</div>
+          <div class="cam-live">🔴 3 watching</div>
+        </div>
+        <div class="cam-progress"><div class="cam-fill" id="camFill" style="width:0%;"></div></div>
+        <button class="stop-btn" onclick="stopRecord()">⬛ Stop & Post</button>
+      </div>
+
+      <!-- Step 3: Post -->
+      <div id="step3" class="post-view" style="display:none;">
+        <div class="preview-box">🎬</div>
+        <input class="post-input" placeholder="তোমার skill কী? (Dance, Cooking...)"/>
+        <input class="post-input" placeholder="Caption লেখো — কেন দেখা উচিত? 🔥"/>
+        <div class="post-hint">
+          <div class="post-hint-title">💰 Post করলেই পাবে:</div>
+          <div class="post-hint-text">✅ +10 coins তুরন্ত<br/>✅ 500 views এ +50 coins<br/>✅ Brand deal eligible হবে</div>
+        </div>
+        <button class="post-submit" onclick="submitPost()">🚀 Post করো — Earn শুরু হোক!</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="showTab('feed')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label" id="lbl-feed" >Feed</span>
+    </button>
+    <button class="nav-item" onclick="showTab('earn')">
+      <span class="nav-icon">💰</span>
+      <span class="nav-label" id="lbl-earn">Earn</span>
+    </button>
+    <button class="nav-flash" onclick="goFlash()">⚡</button>
+    <button class="nav-item" onclick="showTab('rank')">
+      <span class="nav-icon">🏆</span>
+      <span class="nav-label" id="lbl-rank">Ranks</span>
+    </button>
+    <button class="nav-item" onclick="showTab('profile')">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label" id="lbl-profile">Profile</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──
+var coins = 320;
+var firedPosts = {};
+var actionsDone = {};
+
+var POSTS = [
+  {id:1,user:"Priya_Dances",avatar:"💃",tag:"Dance",time:"2m ago",views:48200,c:320,badge:"🚀 Viral",emoji:"🕺",color:"#FF6B6B",desc:"Freestyle on Kesariya — shot in my room! No studio needed 🔥",streak:18,earned:"₹480"},
+  {id:2,user:"RahulCooks",avatar:"👨‍🍳",tag:"Cooking",time:"5m ago",views:12800,c:89,badge:"⭐ Rising",emoji:"🍳",color:"#FF9933",desc:"Made Biryani in 15 mins. Swiggy sponsored this post 🎉",streak:7,earned:"₹130"},
+  {id:3,user:"AnjaliSings",avatar:"🎤",tag:"Music",time:"8m ago",views:91000,c:1240,badge:"👑 Top India",emoji:"🎵",color:"#A78BFA",desc:"Acapella cover. boAt gifted me earphones for going viral!",streak:42,earned:"₹1,860"},
+  {id:4,user:"DevCodes",avatar:"💻",tag:"Tech",time:"12m ago",views:5600,c:38,badge:"🆕 New",emoji:"⌨️",color:"#34D399",desc:"Built a todo app live in 3 mins. First viral post!",streak:3,earned:"₹57"},
+  {id:5,user:"MeghaArt",avatar:"🎨",tag:"Art",time:"1m ago",views:23100,c:178,badge:"🔥 Trending",emoji:"✏️",color:"#F7C948",desc:"Drew Shah Rukh Khan in 2 mins 30 secs. Can you beat me?",streak:11,earned:"₹267"}
+];
+
+var LEADERBOARD = [
+  {rank:1,user:"AnjaliSings",avatar:"🎤",views:"91k",earned:"₹1,860",streak:42,crown:true},
+  {rank:2,user:"Priya_Dances",avatar:"💃",views:"48k",earned:"₹480",streak:18},
+  {rank:3,user:"MeghaArt",avatar:"🎨",views:"23k",earned:"₹267",streak:11},
+  {rank:4,user:"RahulCooks",avatar:"👨‍🍳",views:"12k",earned:"₹130",streak:7},
+  {rank:5,user:"You 😎",avatar:"😎",views:"0",earned:"₹0",streak:0,isMe:true}
+];
+
+var ACTIONS = [
+  {icon:"📹",label:"Daily Skill Post",coins:10},
+  {icon:"🔥",label:"Streak Bonus (Day 1)",coins:5},
+  {icon:"👁️",label:"500 Views Milestone",coins:50},
+  {icon:"⚡",label:"Win a Challenge",coins:100},
+  {icon:"🚀",label:"10,000 Views — Viral!",coins:500}
+];
+
+var BRANDS = [
+  {name:"boAt Music Hunt 🎧",prize:"₹50,000",days:12,color:"#FF1744",icon:"🎵"},
+  {name:"Swiggy Cook Challenge",prize:"₹25,000",days:7,color:"#FC8C04",icon:"🍕"},
+  {name:"Myntra Style Flash",prize:"₹1,00,000",days:3,color:"#E91E63",icon:"👗"},
+  {name:"Mamaearth Skincare",prize:"₹75,000",days:20,color:"#4CAF50",icon:"🌿"}
+];
+
+var CATS = ["All","Dance","Music","Cooking","Tech","Art"];
+var currentCat = "All";
+var currentTab = "feed";
+var recInterval, cdInterval, recSec = 180;
+
+// ── INIT ──
+function init() {
+  buildCats();
+  buildPosts("All");
+  buildActions();
+  buildBrands();
+  buildLeaderboard();
+  setTimeout(function(){ document.getElementById('notif').style.display='flex'; }, 2500);
 }
+
+function fmt(n){ return n>=1000?(n/1000).toFixed(1)+"k":n; }
+
+// ── CATS ──
+function buildCats(){
+  var html="";
+  CATS.forEach(function(c){
+    html+='<div class="cat'+(c===currentCat?" active":"")+'" onclick="filterCat(\''+c+'\')">'+c+'</div>';
+  });
+  document.getElementById('catRow').innerHTML=html;
+}
+
+function filterCat(c){
+  currentCat=c;
+  buildCats();
+  buildPosts(c);
+}
+
+// ── POSTS ──
+function buildPosts(cat){
+  var list = cat==="All"?POSTS:POSTS.filter(function(p){return p.tag===cat;});
+  var html="";
+  list.forEach(function(p){
+    var fired = firedPosts[p.id];
+    html+='<div class="post">';
+    html+='<div class="post-thumb" style="background:linear-gradient(135deg,'+p.color+'1a,'+p.color+'08);">';
+    html+='<span style="font-size:66px;">'+p.emoji+'</span>';
+    html+='<div class="post-badge" style="background:'+p.color+'2a;border:1px solid '+p.color+'55;color:'+p.color+';">'+p.badge+'</div>';
+    html+='<div class="post-dur">⏱ 3:00</div>';
+    html+='<div class="post-earned">💰 '+p.earned+' earned</div>';
+    html+='</div>';
+    html+='<div class="post-body">';
+    html+='<div class="post-user-row">';
+    html+='<div class="post-ava" style="background:'+p.color+'18;border-color:'+p.color+';">'+p.avatar+'</div>';
+    html+='<div style="flex:1"><div class="post-name">'+p.user+'</div><div class="post-time">'+p.time+' · 🔥 '+p.streak+' day streak</div></div>';
+    html+='<div class="post-tag" style="background:'+p.color+'16;border:1px solid '+p.color+'30;color:'+p.color+';">#'+p.tag+'</div>';
+    html+='</div>';
+    html+='<div class="post-desc">'+p.desc+'</div>';
+    html+='<div class="post-stats">';
+    html+='<div class="stat-pill">👁 '+fmt(p.views)+'</div>';
+    html+='<div class="stat-pill stat-coin">🪙 '+p.c+'</div>';
+    html+='<div class="stat-pill stat-earn">💰 '+p.earned+'</div>';
+    html+='</div>';
+    html+='<div class="post-actions">';
+    html+='<button class="btn-fire'+(fired?" active":"")+'" onclick="toggleFire('+p.id+')">🔥 '+(p.c+(fired?1:0))+'</button>';
+    html+='<button class="btn-comment">💬</button>';
+    html+='<button class="btn-challenge">⚡ Challenge</button>';
+    html+='</div></div></div>';
+  });
+  document.getElementById('postList').innerHTML=html;
+}
+
+function toggleFire(id){
+  firedPosts[id]=!firedPosts[id];
+  buildPosts(currentCat);
+}
+
+// ── ACTIONS ──
+function buildActions(){
+  var html="";
+  ACTIONS.forEach(function(a,i){
+    var done=actionsDone[i];
+    html+='<div class="earn-action'+(done?" done":"")+'" onclick="doAction('+i+')">';
+    html+='<div class="earn-action-icon">'+a.icon+'</div>';
+    html+='<div style="flex:1"><div class="earn-action-label">'+a.label+'</div>';
+    html+='<div class="earn-action-sub">'+(done?"✅ Done!":"Tap to complete")+'</div></div>';
+    html+='<div class="earn-coin-badge">+'+a.coins+' 🪙</div></div>';
+  });
+  document.getElementById('actionList').innerHTML=html;
+}
+
+function doAction(i){
+  if(actionsDone[i]) return;
+  actionsDone[i]=true;
+  addCoins(ACTIONS[i].coins);
+  showEarnPopup("+"+ACTIONS[i].coins+" coins! 🪙");
+  buildActions();
+}
+
+// ── BRANDS ──
+function buildBrands(){
+  var html="";
+  BRANDS.forEach(function(b){
+    html+='<div class="brand-card" style="border:1px solid '+b.color+'2a;background:linear-gradient(135deg,'+b.color+'0e,'+b.color+'06);">';
+    html+='<div class="brand-logo" style="background:'+b.color+'1a;border:1.5px solid '+b.color+'3a;">'+b.icon+'</div>';
+    html+='<div style="flex:1"><div class="brand-name">'+b.name+'</div>';
+    html+='<div class="brand-prize" style="color:'+b.color+'">'+b.prize+' · '+b.days+' days left</div></div>';
+    html+='<button class="brand-join" style="background:'+b.color+';" onclick="showEarnPopup(\'Joined! Good luck 🔥\')">Join!</button>';
+    html+='</div>';
+  });
+  document.getElementById('brandList').innerHTML=html;
+}
+
+// ── LEADERBOARD ──
+function buildLeaderboard(){
+  var html="";
+  LEADERBOARD.forEach(function(u){
+    var isMe=u.isMe;
+    var rankIcon=u.rank===1?"👑":u.rank===2?"🥈":u.rank===3?"🥉":u.rank;
+    var rankColor=u.rank===1?"#F7C948":u.rank===2?"#aaa":u.rank===3?"#cd7f32":"#333";
+    html+='<div class="rank-row'+(isMe?" me":"")+'">';
+    html+='<div class="rank-num" style="color:'+rankColor+'">'+rankIcon+'</div>';
+    html+='<div class="rank-ava">'+u.avatar+'</div>';
+    html+='<div style="flex:1"><div class="rank-name'+(isMe?" me":"")+'">'+u.user+'</div>';
+    html+='<div class="rank-streak">🔥 '+u.streak+' streak · 👁 '+u.views+'</div></div>';
+    html+='<div><div class="rank-earned">'+u.earned+'</div><div class="rank-week">this week</div></div>';
+    html+='</div>';
+  });
+  document.getElementById('rankList').innerHTML=html;
+}
+
+// ── TABS ──
+function showTab(tab){
+  ['feed','earn','rank','upload'].forEach(function(t){
+    document.getElementById('tab-'+t).style.display='none';
+    var lbl=document.getElementById('lbl-'+t);
+    if(lbl) lbl.classList.remove('active');
+  });
+  document.getElementById('tab-'+tab).style.display='block';
+  var lbl=document.getElementById('lbl-'+tab);
+  if(lbl) lbl.classList.add('active');
+  currentTab=tab;
+  if(tab==='upload'){ showStep(0); }
+}
+
+// ── UPLOAD STEPS ──
+function showStep(n){
+  [0,1,2,3].forEach(function(i){ document.getElementById('step'+i).style.display='none'; });
+  document.getElementById('step'+n).style.display='block';
+}
+
+function startRecord(){
+  showStep(1);
+  var c=3;
+  document.getElementById('cdNum').textContent=c;
+  cdInterval=setInterval(function(){
+    c--;
+    document.getElementById('cdNum').textContent=c;
+    if(c<=0){
+      clearInterval(cdInterval);
+      showStep(2);
+      recSec=180;
+      updateCamTimer();
+      recInterval=setInterval(function(){
+        recSec--;
+        updateCamTimer();
+        if(recSec<=0){ clearInterval(recInterval); showStep(3); }
+      },1000);
+    }
+  },1000);
+}
+
+function updateCamTimer(){
+  var m=Math.floor(recSec/60);
+  var s=recSec%60;
+  document.getElementById('camTimer').textContent=m+":"+(s<10?"0"+s:s);
+  var pct=((180-recSec)/180)*100;
+  document.getElementById('camFill').style.width=pct+"%";
+}
+
+function stopRecord(){
+  clearInterval(recInterval);
+  showStep(3);
+}
+
+function submitPost(){
+  clearInterval(recInterval);
+  addCoins(10);
+  showEarnPopup("+10 coins! 🪙");
+  setTimeout(function(){ showTab('feed'); },2200);
+}
+
+// ── HELPERS ──
+function addCoins(n){
+  coins+=n;
+  var rs=Math.floor(coins*0.15);
+  document.getElementById('coinDisplay').textContent=coins+" Coins = ₹"+rs;
+  document.getElementById('walletCoins').textContent=coins+" 🪙";
+  document.getElementById('walletRs').textContent="₹"+rs;
+  var pct=Math.min(coins/40,100);
+  document.getElementById('walletBar').style.width=pct+"%";
+}
+
+function showEarnPopup(msg){
+  var p=document.getElementById('earnPopup');
+  document.getElementById('earnMsg').textContent=msg;
+  p.style.display='block';
+  setTimeout(function(){ p.style.display='none'; },2000);
+}
+
+function closeNotif(){ document.getElementById('notif').style.display='none'; }
+function openNotif(){ document.getElementById('notif').style.display='flex'; }
+function goFlash(){ closeNotif(); showTab('upload'); showStep(0); }
+
+// ── START ──
+init();
+</script>
+</body>
+</html>
