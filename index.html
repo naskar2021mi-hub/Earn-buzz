@@ -1,0 +1,369 @@
+import { useState, useEffect, useRef } from "react";
+
+const POSTS = [
+  { id:1, user:"Priya_Dances", avatar:"💃", tag:"Dance", time:"2m ago", views:48200, coins:320, badge:"🚀 Viral", emoji:"🕺", color:"#FF6B6B", desc:"Freestyle on Kesariya — shot in my room! No studio needed 🔥", streak:18, earned:"₹480" },
+  { id:2, user:"RahulCooks", avatar:"👨‍🍳", tag:"Cooking", time:"5m ago", views:12800, coins:89, badge:"⭐ Rising", emoji:"🍳", color:"#FF9933", desc:"Made Biryani in 15 mins. Swiggy sponsored this post 🎉", streak:7, earned:"₹130" },
+  { id:3, user:"AnjaliSings", avatar:"🎤", tag:"Music", time:"8m ago", views:91000, coins:1240, badge:"👑 Top India", emoji:"🎵", color:"#A78BFA", desc:"Acapella cover. boAt gifted me earphones for going viral!", streak:42, earned:"₹1,860" },
+  { id:4, user:"DevCodes", avatar:"💻", tag:"Tech", time:"12m ago", views:5600, coins:38, badge:"🆕 New", emoji:"⌨️", color:"#34D399", desc:"Built a todo app live in 3 mins. First viral post!", streak:3, earned:"₹57" },
+  { id:5, user:"MeghaArt", avatar:"🎨", tag:"Art", time:"1m ago", views:23100, coins:178, badge:"🔥 Trending", emoji:"✏️", color:"#F7C948", desc:"Drew Shah Rukh Khan in 2 mins 30 secs. Can you beat me?", streak:11, earned:"₹267" },
+];
+
+const LEADERBOARD = [
+  { rank:1, user:"AnjaliSings", avatar:"🎤", views:"91k", earned:"₹1,860", streak:42 },
+  { rank:2, user:"Priya_Dances", avatar:"💃", views:"48k", earned:"₹480", streak:18 },
+  { rank:3, user:"MeghaArt", avatar:"🎨", views:"23k", earned:"₹267", streak:11 },
+  { rank:4, user:"RahulCooks", avatar:"👨‍🍳", views:"12k", earned:"₹130", streak:7 },
+  { rank:5, user:"You 😎", avatar:"😎", views:"0", earned:"₹0", streak:0, isMe:true },
+];
+
+const BRANDS = [
+  { name:"boAt Music Hunt 🎧", prize:"₹50,000", days:12, color:"#FF1744", icon:"🎵" },
+  { name:"Swiggy Cook Challenge", prize:"₹25,000", days:7, color:"#FC8C04", icon:"🍕" },
+  { name:"Myntra Style Flash", prize:"₹1,00,000", days:3, color:"#E91E63", icon:"👗" },
+  { name:"Mamaearth Skincare", prize:"₹75,000", days:20, color:"#4CAF50", icon:"🌿" },
+];
+
+const EARN_ACTIONS = [
+  { icon:"📹", label:"Daily Skill Post", coins:10 },
+  { icon:"🔥", label:"Streak Bonus (Day 1)", coins:5 },
+  { icon:"👁️", label:"500 Views Milestone", coins:50 },
+  { icon:"⚡", label:"Win a Challenge", coins:100 },
+  { icon:"🚀", label:"10,000 Views — Viral!", coins:500 },
+];
+
+const CATS = ["All","Dance","Music","Cooking","Tech","Art"];
+
+export default function SkillFlash() {
+  const [tab, setTab] = useState("feed");
+  const [cat, setCat] = useState("All");
+  const [fired, setFired] = useState({});
+  const [showNotif, setShowNotif] = useState(false);
+  const [uploadStep, setUploadStep] = useState(0);
+  const [recording, setRecording] = useState(false);
+  const [recTime, setRecTime] = useState(180);
+  const [coins, setCoins] = useState(320);
+  const [actions, setActions] = useState(EARN_ACTIONS.map(a=>({...a,done:false})));
+  const [showEarnPopup, setShowEarnPopup] = useState(false);
+  const [earnedMsg, setEarnedMsg] = useState("");
+  const [countdown, setCountdown] = useState(3);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowNotif(true), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (uploadStep === 1) {
+      let c = 3; setCountdown(3);
+      const cd = setInterval(() => {
+        c--; setCountdown(c);
+        if (c <= 0) { clearInterval(cd); setUploadStep(2); setRecording(true); setRecTime(180); }
+      }, 1000);
+      return () => clearInterval(cd);
+    }
+  }, [uploadStep]);
+
+  useEffect(() => {
+    if (recording) {
+      timerRef.current = setInterval(() => {
+        setRecTime(t => {
+          if (t <= 1) { clearInterval(timerRef.current); setRecording(false); setUploadStep(3); return 0; }
+          return t - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timerRef.current);
+    }
+  }, [recording]);
+
+  const doAction = (i) => {
+    const a = actions[i];
+    if (a.done) return;
+    const na = [...actions]; na[i] = {...a, done:true};
+    setActions(na);
+    setCoins(c => c + a.coins);
+    setEarnedMsg(`+${a.coins} coins! 🪙`);
+    setShowEarnPopup(true);
+    setTimeout(() => setShowEarnPopup(false), 2000);
+  };
+
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+"k" : n;
+  const posts = cat === "All" ? POSTS : POSTS.filter(p => p.tag === cat);
+
+  return (
+    <div style={{minHeight:"100vh",background:"#060612",display:"flex",justifyContent:"center",alignItems:"center",padding:"16px",fontFamily:"'Segoe UI',sans-serif"}}>
+      <div style={{width:390,minHeight:780,maxHeight:860,background:"#0f0f1a",borderRadius:44,border:"2px solid #1e1e30",boxShadow:"0 0 80px rgba(255,107,0,0.12),0 40px 80px rgba(0,0,0,0.8)",overflow:"hidden",position:"relative",display:"flex",flexDirection:"column"}}>
+
+        {/* NOTIFICATION */}
+        {showNotif && (
+          <div style={{position:"absolute",top:14,left:14,right:14,zIndex:200,background:"linear-gradient(135deg,#1a0800,#2a1000)",border:"1.5px solid rgba(255,153,51,0.5)",borderRadius:22,padding:"14px 16px",boxShadow:"0 8px 40px rgba(0,0,0,0.8)",display:"flex",alignItems:"center",gap:12,animation:"slideDown 0.4s ease"}}>
+            <div style={{fontSize:28}}>⚡</div>
+            <div style={{flex:1}}>
+              <div style={{color:"#FF9933",fontWeight:800,fontSize:12,letterSpacing:1}}>SKILLFLASH ALERT!</div>
+              <div style={{color:"#e0e0ff",fontSize:11,marginTop:2}}>Skill দেখাও → <b style={{color:"#F7C948"}}>₹100+ earn করো</b> আজই! 🔥</div>
+            </div>
+            <button onClick={()=>{setShowNotif(false);setTab("upload");setUploadStep(1);}} style={{background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:10,color:"#fff",fontWeight:900,fontSize:11,padding:"8px 12px",cursor:"pointer"}}>GO!</button>
+            <button onClick={()=>setShowNotif(false)} style={{background:"none",border:"none",color:"#444",fontSize:18,cursor:"pointer"}}>×</button>
+          </div>
+        )}
+
+        {/* EARN POPUP */}
+        {showEarnPopup && (
+          <div style={{position:"absolute",top:"42%",left:"50%",transform:"translate(-50%,-50%)",zIndex:300,background:"linear-gradient(135deg,#F7C948,#FF6B00)",borderRadius:20,padding:"18px 32px",textAlign:"center",boxShadow:"0 0 50px rgba(247,201,72,0.5)"}}>
+            <div style={{fontSize:36}}>🪙</div>
+            <div style={{color:"#fff",fontWeight:900,fontSize:20,marginTop:4}}>{earnedMsg}</div>
+          </div>
+        )}
+
+        {/* HEADER */}
+        <div style={{padding:"50px 20px 14px",background:"#0a0a16",borderBottom:"1px solid #181828",flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontWeight:900,fontSize:26,background:"linear-gradient(90deg,#FF9933,#FF6B00)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:-1}}>⚡ SkillFlash</div>
+              <div style={{color:"#444",fontSize:11,marginTop:1}}>🇮🇳 India's Skill Earning App</div>
+            </div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <div onClick={()=>setShowNotif(true)} style={{position:"relative",cursor:"pointer",fontSize:22}}>🔔
+                <div style={{position:"absolute",top:0,right:0,width:7,height:7,background:"#FF9933",borderRadius:"50%",border:"2px solid #0a0a16"}}/>
+              </div>
+              <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>😎</div>
+            </div>
+          </div>
+          {/* Coin bar */}
+          <div onClick={()=>setTab("earn")} style={{marginTop:12,background:"linear-gradient(135deg,rgba(255,153,51,0.1),rgba(255,107,0,0.05))",border:"1px solid rgba(255,153,51,0.22)",borderRadius:16,padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              <span style={{fontSize:24}}>🪙</span>
+              <div>
+                <div style={{color:"#F7C948",fontWeight:800,fontSize:13}}>{coins} Coins = ₹{Math.floor(coins*0.15)}</div>
+                <div style={{color:"#555",fontSize:10}}>Skill দেখাও → Earn করো → UPI তে তোলো</div>
+              </div>
+            </div>
+            <div style={{background:"linear-gradient(135deg,#FF9933,#FF6B00)",borderRadius:10,padding:"6px 12px",color:"#fff",fontWeight:800,fontSize:11}}>Earn →</div>
+          </div>
+        </div>
+
+        {/* ── FEED ── */}
+        {tab==="feed" && (
+          <div style={{flex:1,overflowY:"auto"}}>
+            <div style={{display:"flex",gap:7,padding:"11px 16px",overflowX:"auto"}}>
+              {CATS.map(c=>(
+                <button key={c} onClick={()=>setCat(c)} style={{background:cat===c?"linear-gradient(135deg,#FF9933,#FF6B00)":"rgba(255,255,255,0.04)",border:cat===c?"none":"1px solid #1e1e2e",borderRadius:20,padding:"6px 15px",color:cat===c?"#fff":"#666",fontWeight:cat===c?700:400,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div style={{padding:"0 15px 110px"}}>
+              {posts.map(post=>(
+                <div key={post.id} style={{background:"rgba(255,255,255,0.02)",border:"1px solid #181828",borderRadius:22,marginBottom:16,overflow:"hidden"}}>
+                  <div style={{height:185,background:`linear-gradient(135deg,${post.color}1a,${post.color}08)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:68,position:"relative"}}>
+                    {post.emoji}
+                    <div style={{position:"absolute",top:11,left:11,background:post.color+"2a",border:`1px solid ${post.color}55`,borderRadius:9,padding:"3px 9px",color:post.color,fontWeight:700,fontSize:11}}>{post.badge}</div>
+                    <div style={{position:"absolute",top:11,right:11,background:"rgba(0,0,0,0.6)",borderRadius:9,padding:"3px 9px",color:"#999",fontSize:10}}>⏱ 3:00</div>
+                    <div style={{position:"absolute",bottom:11,right:11,background:"linear-gradient(135deg,rgba(247,201,72,0.88),rgba(255,107,0,0.88))",borderRadius:9,padding:"5px 11px",color:"#fff",fontWeight:900,fontSize:12}}>💰 {post.earned} earned</div>
+                  </div>
+                  <div style={{padding:"12px 14px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:8}}>
+                      <div style={{width:34,height:34,borderRadius:"50%",background:post.color+"18",border:`2px solid ${post.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>{post.avatar}</div>
+                      <div style={{flex:1}}>
+                        <div style={{color:"#e0e0f8",fontWeight:700,fontSize:13}}>{post.user}</div>
+                        <div style={{color:"#3a3a4a",fontSize:10}}>{post.time} · 🔥 {post.streak} day streak</div>
+                      </div>
+                      <div style={{background:post.color+"16",border:`1px solid ${post.color}30`,borderRadius:9,padding:"3px 9px",color:post.color,fontSize:10,fontWeight:600}}>#{post.tag}</div>
+                    </div>
+                    <div style={{color:"#6868888",fontSize:12,marginBottom:10,lineHeight:1.5,color:"#7070909"}}>{post.desc}</div>
+                    <div style={{display:"flex",gap:7,marginBottom:10}}>
+                      <div style={{background:"rgba(255,255,255,0.04)",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#777"}}>👁 {fmt(post.views)}</div>
+                      <div style={{background:"rgba(247,201,72,0.09)",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#F7C948",fontWeight:700}}>🪙 {post.coins}</div>
+                      <div style={{background:"rgba(52,211,153,0.09)",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#34D399",fontWeight:700}}>💰 {post.earned}</div>
+                    </div>
+                    <div style={{display:"flex",gap:7}}>
+                      <button onClick={()=>setFired(f=>({...f,[post.id]:!f[post.id]}))} style={{background:fired[post.id]?"rgba(255,107,53,0.13)":"rgba(255,255,255,0.04)",border:fired[post.id]?"1px solid rgba(255,107,53,0.35)":"1px solid #1e1e2e",borderRadius:11,padding:"8px 13px",cursor:"pointer",color:fired[post.id]?"#FF6B35":"#666",fontWeight:700,fontSize:13}}>
+                        🔥 {post.coins+(fired[post.id]?1:0)}
+                      </button>
+                      <button style={{background:"rgba(255,255,255,0.04)",border:"1px solid #1e1e2e",borderRadius:11,padding:"8px 11px",cursor:"pointer",color:"#666",fontSize:13}}>💬</button>
+                      <button style={{flex:1,background:"linear-gradient(135deg,rgba(255,153,51,0.12),rgba(255,107,0,0.06))",border:"1px solid rgba(255,153,51,0.25)",borderRadius:11,padding:"8px 13px",cursor:"pointer",color:"#FF9933",fontWeight:700,fontSize:12}}>⚡ Challenge</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── EARN ── */}
+        {tab==="earn" && (
+          <div style={{flex:1,overflowY:"auto",padding:"15px 15px 110px"}}>
+            {/* Wallet card */}
+            <div style={{background:"linear-gradient(135deg,#1a0800,#2a1000)",border:"2px solid rgba(255,153,51,0.35)",borderRadius:22,padding:"18px",marginBottom:16}}>
+              <div style={{color:"#FF9933",fontWeight:800,fontSize:11,letterSpacing:2,marginBottom:6}}>⚡ MY SKILLWALLET</div>
+              <div style={{fontSize:44,fontWeight:900,color:"#fff",lineHeight:1}}>{coins} <span style={{fontSize:22}}>🪙</span></div>
+              <div style={{color:"#777",fontSize:12,marginTop:4}}>= <span style={{color:"#F7C948",fontWeight:700}}>₹{Math.floor(coins*0.15)}</span> withdraw করা যাবে</div>
+              <div style={{height:5,background:"#1a0800",borderRadius:10,marginTop:11,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${Math.min(coins/40,100)}%`,background:"linear-gradient(90deg,#FF9933,#FF6B00)",borderRadius:10,transition:"width 0.5s"}}/>
+              </div>
+              <div style={{fontSize:10,color:"#FF9933",marginTop:4,textAlign:"right"}}>₹500 হলে withdraw করো!</div>
+              <div style={{display:"flex",gap:7,marginTop:13}}>
+                {[["📱","PhonePe","#6739b7"],["🔵","GPay","#1a73e8"],["🔷","Paytm","#00BAF2"]].map(([ic,n,bg])=>(
+                  <button key={n} style={{flex:1,background:bg,border:"none",borderRadius:11,color:"#fff",fontWeight:800,fontSize:11,padding:"10px 4px",cursor:"pointer"}}>{ic} {n}</button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{color:"#FF9933",fontWeight:800,fontSize:12,marginBottom:9,letterSpacing:1}}>🎯 আজ করো — Coins পাও</div>
+            {actions.map((a,i)=>(
+              <div key={i} onClick={()=>doAction(i)} style={{background:a.done?"rgba(52,211,153,0.05)":"rgba(255,255,255,0.02)",border:a.done?"1px solid rgba(52,211,153,0.25)":"1px solid #181828",borderRadius:15,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:11,cursor:a.done?"default":"pointer"}}>
+                <div style={{fontSize:22}}>{a.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{color:a.done?"#34D399":"#e0e0f0",fontWeight:600,fontSize:13}}>{a.label}</div>
+                  <div style={{color:"#444",fontSize:10,marginTop:1}}>{a.done?"✅ Done!":"Tap to complete"}</div>
+                </div>
+                <div style={{background:a.done?"rgba(52,211,153,0.12)":"rgba(247,201,72,0.12)",borderRadius:9,padding:"5px 11px",color:a.done?"#34D399":"#F7C948",fontWeight:800,fontSize:13}}>+{a.coins} 🪙</div>
+              </div>
+            ))}
+
+            <div style={{color:"#FF9933",fontWeight:800,fontSize:12,margin:"15px 0 9px",letterSpacing:1}}>🏆 Brand Campaigns</div>
+            {BRANDS.map((b,i)=>(
+              <div key={i} style={{background:`linear-gradient(135deg,${b.color}0e,${b.color}06)`,border:`1px solid ${b.color}2a`,borderRadius:15,padding:"11px 13px",marginBottom:8,display:"flex",alignItems:"center",gap:11}}>
+                <div style={{width:38,height:38,borderRadius:11,background:b.color+"1a",border:`1.5px solid ${b.color}3a`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19}}>{b.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{color:"#e0e0f0",fontWeight:700,fontSize:12}}>{b.name}</div>
+                  <div style={{color:b.color,fontSize:11,marginTop:2,fontWeight:700}}>{b.prize} · {b.days} days left</div>
+                </div>
+                <button style={{background:b.color,border:"none",borderRadius:9,color:"#fff",fontWeight:800,fontSize:11,padding:"7px 11px",cursor:"pointer"}}>Join!</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── LEADERBOARD ── */}
+        {tab==="rank" && (
+          <div style={{flex:1,overflowY:"auto",padding:"15px 15px 110px"}}>
+            {/* Podium */}
+            <div style={{display:"flex",justifyContent:"center",alignItems:"flex-end",gap:10,marginBottom:18}}>
+              {[{n:"NadiaSings",av:"🎤",h:58,bg:"linear-gradient(180deg,#bbb,#999)",rank:"2"},
+                {n:"Priya",av:"💃",h:80,bg:"linear-gradient(180deg,#F7C948,#FF9933)",rank:"👑",big:true},
+                {n:"Megha",av:"🎨",h:44,bg:"linear-gradient(180deg,#cd7f32,#a0522d)",rank:"3"}
+              ].map(p=>(
+                <div key={p.n} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                  <div style={{fontSize:p.big?28:22}}>{p.av}</div>
+                  <div style={{width:p.big?76:64,height:p.h,background:p.bg,borderRadius:"8px 8px 0 0",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:p.big?20:16}}>{p.rank}</div>
+                  <div style={{fontSize:10,color:p.big?"#F7C948":"#777",fontWeight:p.big?700:400}}>{p.n}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{color:"#FF9933",fontWeight:800,fontSize:14,marginBottom:4}}>👑 Top Earners — This Week</div>
+            <div style={{color:"#3a3a5a",fontSize:11,marginBottom:13}}>Viral হলে তুমিও এখানে আসবে!</div>
+
+            {LEADERBOARD.map(u=>(
+              <div key={u.rank} style={{background:u.isMe?"linear-gradient(135deg,rgba(255,153,51,0.09),rgba(255,107,0,0.05))":"rgba(255,255,255,0.02)",border:u.isMe?"1px solid rgba(255,153,51,0.3)":"1px solid #181828",borderRadius:17,padding:"12px 14px",marginBottom:9,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:17,width:26,textAlign:"center",fontWeight:900,color:u.rank===1?"#F7C948":u.rank===2?"#aaa":u.rank===3?"#cd7f32":"#333"}}>{u.rank===1?"👑":u.rank}</div>
+                <div style={{fontSize:24}}>{u.avatar}</div>
+                <div style={{flex:1}}>
+                  <div style={{color:u.isMe?"#FF9933":"#e0e0f0",fontWeight:700,fontSize:13}}>{u.user}</div>
+                  <div style={{color:"#3a3a5a",fontSize:10}}>🔥 {u.streak} streak · 👁 {u.views}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{color:"#34D399",fontWeight:800,fontSize:14}}>{u.earned}</div>
+                  <div style={{color:"#3a3a5a",fontSize:9}}>this week</div>
+                </div>
+              </div>
+            ))}
+
+            <div style={{background:"linear-gradient(135deg,#1a0800,#2a0800)",border:"1.5px solid rgba(255,153,51,0.25)",borderRadius:20,padding:"18px",textAlign:"center",marginTop:6}}>
+              <div style={{fontSize:30,marginBottom:7}}>🚀</div>
+              <div style={{color:"#FF9933",fontWeight:800,fontSize:15,marginBottom:5}}>তুমিও Top এ আসো!</div>
+              <div style={{color:"#555",fontSize:12,marginBottom:13}}>আজই skill post করো → views বাড়াও → ₹ earn করো</div>
+              <button onClick={()=>{setTab("upload");setUploadStep(0);}} style={{width:"100%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:14,color:"#fff",fontWeight:900,fontSize:15,padding:"13px",cursor:"pointer"}}>⚡ এখনই Flash করো!</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── UPLOAD ── */}
+        {tab==="upload" && (
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"22px 18px"}}>
+
+            {uploadStep===0 && (
+              <div style={{textAlign:"center",width:"100%"}}>
+                <div style={{fontSize:56,marginBottom:14}}>📹</div>
+                <div style={{color:"#FF9933",fontWeight:900,fontSize:22,marginBottom:7}}>⚡ Flash Your Skill!</div>
+                <div style={{color:"#555",fontSize:13,marginBottom:20,lineHeight:1.7}}>৩ মিনিটে skill দেখাও<br/><span style={{color:"#F7C948",fontWeight:700}}>Views = Coins = ₹ Real Money</span></div>
+                <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid #1e1e2e",borderRadius:18,padding:"16px",marginBottom:18,textAlign:"left"}}>
+                  <div style={{color:"#FF9933",fontWeight:800,fontSize:12,marginBottom:10,letterSpacing:1}}>💰 কত পাবে?</div>
+                  {[["500 views","10 🪙 = ₹1.5"],["5,000 views","100 🪙 = ₹15"],["50,000 views","1,000 🪙 = ₹150"],["Viral (1L views)","10,000 🪙 = ₹1,500"]].map(([v,e])=>(
+                    <div key={v} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid #10101e"}}>
+                      <span style={{color:"#666",fontSize:12}}>👁 {v}</span>
+                      <span style={{color:"#F7C948",fontWeight:700,fontSize:12}}>{e}</span>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={()=>setUploadStep(1)} style={{width:"100%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:16,color:"#fff",fontWeight:900,fontSize:16,padding:"15px",cursor:"pointer",boxShadow:"0 0 24px rgba(255,153,51,0.35)"}}>📹 শুরু করো!</button>
+                <button onClick={()=>setTab("feed")} style={{background:"none",border:"none",color:"#333",fontSize:13,marginTop:13,cursor:"pointer"}}>← ফিরে যাও</button>
+              </div>
+            )}
+
+            {uploadStep===1 && (
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:90,fontWeight:900,color:"#FF9933",lineHeight:1}}>{countdown}</div>
+                <div style={{color:"#FF9933",fontWeight:700,fontSize:18,marginTop:12}}>তৈরি হও!</div>
+                <div style={{color:"#444",fontSize:13,marginTop:6}}>Camera শুরু হচ্ছে...</div>
+              </div>
+            )}
+
+            {uploadStep===2 && (
+              <div style={{width:"100%"}}>
+                <div style={{width:"100%",height:230,background:"linear-gradient(135deg,#1a0800,#0a0a18)",borderRadius:22,marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:58,position:"relative",border:"2.5px solid #FF9933",boxShadow:"0 0 28px rgba(255,153,51,0.25)"}}>
+                  📹
+                  <div style={{position:"absolute",top:11,right:11,background:"#FF9933",borderRadius:7,padding:"3px 9px",color:"#fff",fontWeight:900,fontSize:11,display:"flex",alignItems:"center",gap:4}}>
+                    <div style={{width:7,height:7,background:"#fff",borderRadius:"50%",animation:"blink 1s infinite"}}/>REC
+                  </div>
+                  <div style={{position:"absolute",bottom:11,left:11,background:"rgba(0,0,0,0.75)",borderRadius:7,padding:"4px 11px",color:"#F7C948",fontWeight:900,fontSize:14}}>
+                    {Math.floor(recTime/60)}:{String(recTime%60).padStart(2,"0")}
+                  </div>
+                  <div style={{position:"absolute",bottom:11,right:11,background:"rgba(52,211,153,0.18)",borderRadius:7,padding:"3px 9px",color:"#34D399",fontSize:9,fontWeight:700}}>🔴 3 watching</div>
+                </div>
+                <div style={{height:4,background:"#1a0800",borderRadius:10,marginBottom:13,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${((180-recTime)/180)*100}%`,background:"linear-gradient(90deg,#FF9933,#FF6B00)",borderRadius:10,transition:"width 1s linear"}}/>
+                </div>
+                <button onClick={()=>{clearInterval(timerRef.current);setRecording(false);setUploadStep(3);}} style={{width:"100%",background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:15,color:"#fff",fontWeight:900,fontSize:15,padding:"13px",cursor:"pointer"}}>⬛ Stop & Post</button>
+              </div>
+            )}
+
+            {uploadStep===3 && (
+              <div style={{width:"100%",textAlign:"center"}}>
+                <div style={{width:"100%",height:140,background:"rgba(255,255,255,0.02)",borderRadius:20,marginBottom:13,display:"flex",alignItems:"center",justifyContent:"center",fontSize:48,border:"1px solid #1e1e2e"}}>🎬</div>
+                <input placeholder="তোমার skill কী? (Dance, Cooking...)" style={{width:"100%",background:"#18182a",border:"1px solid #22223a",borderRadius:13,padding:"12px 15px",color:"#e0e0f0",fontSize:13,marginBottom:9,boxSizing:"border-box",outline:"none"}}/>
+                <input placeholder="Caption — কেন দেখা উচিত? 🔥" style={{width:"100%",background:"#18182a",border:"1px solid #22223a",borderRadius:13,padding:"12px 15px",color:"#e0e0f0",fontSize:13,marginBottom:14,boxSizing:"border-box",outline:"none"}}/>
+                <div style={{background:"rgba(52,211,153,0.05)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:13,padding:"11px",marginBottom:13,textAlign:"left"}}>
+                  <div style={{color:"#34D399",fontWeight:700,fontSize:12,marginBottom:5}}>💰 Post করলেই পাবে:</div>
+                  <div style={{color:"#555",fontSize:11,lineHeight:1.8}}>✅ +10 coins তুরন্ত<br/>✅ 500 views এ +50 coins<br/>✅ Brand deal eligible হবে</div>
+                </div>
+                <button onClick={()=>{setCoins(c=>c+10);setEarnedMsg("+10 coins! 🪙");setShowEarnPopup(true);setTab("feed");setUploadStep(0);setTimeout(()=>setShowEarnPopup(false),2000);}} style={{width:"100%",background:"linear-gradient(135deg,#34D399,#FF9933)",border:"none",borderRadius:15,color:"#fff",fontWeight:900,fontSize:15,padding:"13px",cursor:"pointer"}}>🚀 Post করো — Earn শুরু হোক!</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── BOTTOM NAV ── */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(6,6,18,0.97)",borderTop:"1px solid #181828",backdropFilter:"blur(20px)",padding:"10px 0 22px",display:"flex",justifyContent:"space-around",alignItems:"center"}}>
+          {[{id:"feed",icon:"🏠",label:"Feed"},{id:"earn",icon:"💰",label:"Earn"},{id:null},{id:"rank",icon:"🏆",label:"Ranks"},{id:"profile",icon:"👤",label:"Profile"}].map((item,i)=>(
+            item.id===null ? (
+              <button key="flash" onClick={()=>{setTab("upload");setUploadStep(0);}} style={{width:56,height:56,background:"linear-gradient(135deg,#FF9933,#FF6B00)",border:"none",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,cursor:"pointer",marginTop:-13,boxShadow:"0 0 22px rgba(255,153,51,0.45)"}}>⚡</button>
+            ) : (
+              <button key={item.id} onClick={()=>setTab(item.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <div style={{fontSize:21}}>{item.icon}</div>
+                <div style={{fontSize:9,color:tab===item.id?"#FF9933":"#2a2a3a",fontWeight:tab===item.id?700:400}}>{item.label}</div>
+              </button>
+            )
+          ))}
+        </div>
+
+      </div>
+      <style>{`
+        @keyframes slideDown{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        ::-webkit-scrollbar{width:0}
+      `}</style>
+    </div>
+  );
+}
